@@ -1,1 +1,4 @@
-"""DB 연결은 Phase 2에서 구현합니다. Phase 1에서는 파일을 생성하지 않습니다."""
+from app.db.base import Base
+from app.db.session import build_session_factory, create_database_engine, get_db
+
+__all__ = ["Base", "build_session_factory", "create_database_engine", "get_db"]

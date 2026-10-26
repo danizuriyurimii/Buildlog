@@ -9,3 +9,6 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///" + str(PROJECT_DIR / "database" / "buildlog.sqlite3")
     test_database_url: str = "sqlite:///:memory:"
     cors_origins: list[str] = ["http://localhost:5173"]
+    session_cookie_name: str = "buildlog_session"
+    session_days: int = 7
+    secure_cookies: bool = False

@@ -20,6 +20,7 @@ def test_allowed_origin_preflight():
     })
     assert response.status_code == 200
     assert response.headers["access-control-allow-origin"] == "http://localhost:5173"
+    assert response.headers["access-control-allow-credentials"] == "true"
 
 
 def test_unknown_origin_cannot_read_cross_origin_response():

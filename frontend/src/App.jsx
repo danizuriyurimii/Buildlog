@@ -1,40 +1,76 @@
-import { useEffect, useState } from 'react';
-import { getHealth } from './api/client.js';
+import { createContext, useContext, useEffect, useState } from 'react';
+import { Link, Navigate, Route, Routes } from 'react-router-dom';
+import { getCurrentUser } from './api/client.js';
+import Home from './pages/Home.jsx';
+import Login from './pages/accounts/Login.jsx';
+import Settings from './pages/accounts/Settings.jsx';
+import Signup from './pages/accounts/Signup.jsx';
 
-export default function App() {
-  const [status, setStatus] = useState('loading');
-  const [attempt, setAttempt] = useState(0);
+const AuthContext = createContext(null);
+
+export function useAuth() {
+  return useContext(AuthContext);
+}
+
+function AuthProvider({ children }) {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const controller = new AbortController();
     let active = true;
-    setStatus('loading');
-    const timer = setTimeout(() => controller.abort(), 8000);
-    getHealth(controller.signal)
-      .then(() => { if (!controller.signal.aborted) setStatus('connected'); })
-      .catch(() => { if (active) setStatus('error'); })
-      .finally(() => clearTimeout(timer));
-    return () => { active = false; controller.abort(); clearTimeout(timer); };
-  }, [attempt]);
+    getCurrentUser()
+      .then((currentUser) => { if (active) setUser(currentUser); })
+      .catch(() => { if (active) setUser(null); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, []);
 
+  return <AuthContext.Provider value={{ user, setUser, loading }}>{children}</AuthContext.Provider>;
+}
+
+function PageShell({ children }) {
+  const { user } = useAuth();
   return (
     <div className="shell">
-      <header><a className="brand" href="/">BuildLog<span className="brand-dot">.</span></a><span className="phase">개발 준비 · Phase 1</span></header>
-      <main>
-        <p className="eyebrow">배움이 쌓이는 곳</p>
-        <h1>오늘의 배움이,<br />내일의 발판이 되도록.</h1>
-        <p className="intro">공부한 내용과 해결한 오류를 한곳에.<br />BuildLog의 첫 화면을 준비하고 있습니다.</p>
-        <section className="connection" aria-labelledby="connection-title">
-          <div><p className="label">개발 환경 확인</p><h2 id="connection-title">서버 연결 상태</h2></div>
-          <div role="status" aria-live="polite" className={`status ${status}`}>
-            <span className="indicator" aria-hidden="true" />
-            {status === 'loading' ? '서버 연결 확인 중…' : status === 'connected' ? 'FastAPI 서버 연결 완료' : '서버에 연결할 수 없습니다'}
-          </div>
-          {status === 'error' && <div className="error-help"><p>백엔드 서버가 실행 중인지 확인한 뒤 다시 시도해주세요.</p><button onClick={() => setAttempt(value => value + 1)}>다시 확인</button></div>}
-        </section>
-        <p className="note">현재는 화면과 서버의 연결을 확인하는 단계입니다.<br />회원 기능과 기록 저장은 다음 단계에서 추가됩니다.</p>
-      </main>
+      <header>
+        <Link className="brand" to={user ? '/' : '/login'}>BuildLog<span className="brand-dot">.</span></Link>
+        {user ? (
+          <nav aria-label="주요 메뉴">
+            <span className="user-name">{user.nickname}</span>
+            <Link className="text-link" to="/settings">계정 설정</Link>
+          </nav>
+        ) : <span className="phase">회원 기능 · Phase 3</span>}
+      </header>
+      <main>{children}</main>
       <footer>BuildLog <span>한 걸음씩, 꾸준히.</span></footer>
     </div>
   );
+}
+
+function ProtectedRoute({ children }) {
+  const { user, loading } = useAuth();
+  if (loading) return <PageShell><p role="status" className="loading">로그인 상태를 확인하고 있습니다…</p></PageShell>;
+  return user ? children : <Navigate to="/login" replace />;
+}
+
+function GuestRoute({ children }) {
+  const { user, loading } = useAuth();
+  if (loading) return <PageShell><p role="status" className="loading">로그인 상태를 확인하고 있습니다…</p></PageShell>;
+  return user ? <Navigate to="/" replace /> : children;
+}
+
+function AppRoutes() {
+  return (
+    <Routes>
+      <Route path="/signup" element={<GuestRoute><PageShell><Signup /></PageShell></GuestRoute>} />
+      <Route path="/login" element={<GuestRoute><PageShell><Login /></PageShell></GuestRoute>} />
+      <Route path="/settings" element={<ProtectedRoute><PageShell><Settings /></PageShell></ProtectedRoute>} />
+      <Route path="/" element={<ProtectedRoute><PageShell><Home /></PageShell></ProtectedRoute>} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
+}
+
+export default function App() {
+  return <AuthProvider><AppRoutes /></AuthProvider>;
 }
