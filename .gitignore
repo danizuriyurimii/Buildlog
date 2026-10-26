@@ -1,0 +1,30 @@
+# Secret environment settings
+.env
+.env.*
+!.env.example
+
+# Installed dependencies
+.venv/
+node_modules/
+
+# Generated output and Python cache
+dist/
+__pycache__/
+
+# Log files
+*.log
+*.log.*
+
+# Local SQLite databases and companion files
+*.sqlite
+*.sqlite3
+*.db
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
+*.sqlite3-journal
+*.sqlite3-wal
+*.sqlite3-shm
+*.db-journal
+*.db-wal
+*.db-shm
