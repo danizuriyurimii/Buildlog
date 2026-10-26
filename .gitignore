@@ -28,3 +28,9 @@ __pycache__/
 *.db-journal
 *.db-wal
 *.db-shm
+
+# Test and tool caches
+.pytest_cache/
+.coverage
+coverage/
+.DS_Store
